@@ -1,0 +1,58 @@
+Transform: AWS::Serverless-2016-10-31
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Sample SAM Template for Athena Querying
+
+Parameters:
+  AthenaBucket:
+    Type: String
+    Description: Enter your unique bucket name to store Athena query results
+
+  CrawlerBucket:
+    Type: String
+    Description: Enter your unique bucket name to fetch table from
+
+  Database:
+    Type: String
+    Description: Enter a Database name
+
+Resources:
+
+  SFRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "states.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonAthenaFullAccess
+        - arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+
+  LambdaFunctionOverHttps:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs12.x
+      Policies: AmazonDynamoDBFullAccess
+      Events:
+        HttpPost:
+          Type: Api
+          Properties:
+            Path: '/DynamoDBOperations/DynamoDBManager'
+            Method: post
+
+
+Outputs:
+  ActivityStateMachineArn:
+    Description: "Activity State machine ARN"
+    Value: !Ref StateMachine
+  ActivityStateMachineRoleArn:
+    Description: "IAM Role created for Activity State machine based on the specified SAM Policy Templates"
+    Value: !GetAtt SFRole.Arn
